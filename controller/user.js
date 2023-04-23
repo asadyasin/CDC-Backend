@@ -120,7 +120,7 @@ const sendVerificationEmail = async ({_id, email}, res) => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const file = path.join(__dirname,"/views/verificationEmail.html")
+    const file = path.join(__dirname,"/../views/verificationEmail.html")
     let html = fs.readFileSync(file, "utf8");
     let link = `${currentUrl +"/user/verify/"+_id}`
 
