@@ -215,8 +215,9 @@ export const verified = async (req, res)=> {
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
+    // const file = path.join(__dirname, "public", "verificationEmail.html");
 
-    res.sendFile(path.join(__dirname,"../public/verified.html"));
+    res.sendFile(path.join(__dirname,"public","verified.html"));
 }
 
 /* Update User Role or Profile */
