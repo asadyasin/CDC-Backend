@@ -3,6 +3,8 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose/index.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import compression from 'compression';
+// const compression = require('compression')
 
 import degreeRoutes from './routes/degrees.js';
 import collegeRoutes from './routes/colleges.js';
@@ -14,6 +16,7 @@ const app = express();
 app.use(express.static('public'));
 
 app.use(express.json({}));
+app.use(compression());
 app.use(bodyParser.json({extended: true}));
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
