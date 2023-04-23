@@ -131,7 +131,7 @@ const sendVerificationEmail = async ({_id, email}, res) => {
         from: process.env.AUTH_EMAIL,
         to: email,
         subject: "Verify Your Email",
-        html: html,
+        html: `Hello`,
     }
     const newVerification = new userVerification({
             userId: _id,
