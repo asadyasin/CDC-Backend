@@ -11,6 +11,7 @@ import messageRoutes from './routes/contact.js';
 
 dotenv.config();
 const app = express();
+app.use(express.static('public'));
 
 app.use(express.json({}));
 app.use(bodyParser.json({extended: true}));
