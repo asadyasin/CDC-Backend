@@ -118,9 +118,10 @@ const sendVerificationEmail = async ({_id, email}, res) => {
     const currentUrl = `${process.env.HOST}${process.env.PORT}`;
 
     const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const file = path.join(__dirname, "public", "verificationEmail.html");
+    // const __dirname = path.dirname(__filename);
+    // const file = path.join(__dirname, "public", "verificationEmail.html");
     // const file = path.join(__dirname,"../public/verificationEmail.html")
+    const file = path.join(process.cwd(), "public", "verificationEmail.html");
     let html = fs.readFileSync(file, "utf8");
     let link = `${currentUrl +"/user/verify/"+_id}`
 
@@ -213,11 +214,13 @@ export const verifyEmail = async (req, res)=>{
 
 export const verified = async (req, res)=> {
     
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
+    // const __filename = fileURLToPath(import.meta.url);
+    // const __dirname = path.dirname(__filename);
+    
+    // const file = path.join(process.cwd(), "public", "verificationEmail.html");
     // const file = path.join(__dirname, "public", "verificationEmail.html");
 
-    res.sendFile(path.join(__dirname,"public","verified.html"));
+    res.sendFile(path.join(process.cwd(), "public", "verified.html"));
 }
 
 /* Update User Role or Profile */
