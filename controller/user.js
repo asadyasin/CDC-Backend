@@ -8,7 +8,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -121,7 +120,7 @@ const sendVerificationEmail = async ({_id, email}, res) => {
     // const __filename = fileURLToPath(import.meta.url);
     // const __dirname = path.dirname(__filename);
     // const file = path.join(process.cwd(),"/../views/verificationEmail.html")
-    let html = fs.readFileSync('/views/verificationEmail.html', "utf8");
+    let html = fs.readFileSync('../views/verificationEmail.html', "utf8");
     let link = `${currentUrl +"/user/verify/"+_id}`
 
     html = html.replace('{link1}', link);
@@ -216,7 +215,7 @@ export const verified = async (req, res)=> {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    res.sendFile(path.join(process.cwd(),"/../views/verified.html"));
+    res.sendFile(path.join(process.cwd(),"../views/verified.html"));
 }
 
 /* Update User Role or Profile */
