@@ -120,7 +120,7 @@ const sendVerificationEmail = async ({_id, email}, res) => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const file = path.join(__dirname,"../views/verificationEmail.html")
+    const file = path.join(process.cwd(),"../views/verificationEmail.html")
     let html = fs.readFileSync(file, "utf8");
     let link = `${currentUrl +"/user/verify/"+_id}`
 
@@ -216,7 +216,7 @@ export const verified = async (req, res)=> {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    res.sendFile(path.join(__dirname,"../views/verified.html"));
+    res.sendFile(path.join(process.cwd(),"../views/verified.html"));
 }
 
 /* Update User Role or Profile */
