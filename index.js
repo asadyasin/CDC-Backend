@@ -4,7 +4,6 @@ import mongoose from 'mongoose/index.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import compression from 'compression';
-// const compression = require('compression')
 
 import degreeRoutes from './routes/degrees.js';
 import collegeRoutes from './routes/colleges.js';
@@ -26,11 +25,13 @@ app.use('/degrees', degreeRoutes);
 app.use('/colleges', collegeRoutes);
 app.use('/user', userRoutes);
 app.use('/contact', messageRoutes);
-app.get('/', (req, res) => {
-    res.send(`Server running on port ${PORT}`);
-  })
 
+const HOST = process.env.HOST;
 const PORT = process.env.PORT || 5000;
+
+app.get('/', (req, res) => {
+    res.send(`Server running on ${HOST}${PORT}`);
+  })
 
 mongoose.set('strictQuery', true);
 mongoose.connect(process.env.CONNECTION_URL,{
