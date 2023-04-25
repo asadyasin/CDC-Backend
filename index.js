@@ -26,6 +26,9 @@ app.use('/degrees', degreeRoutes);
 app.use('/colleges', collegeRoutes);
 app.use('/user', userRoutes);
 app.use('/contact', messageRoutes);
+app.get('/', (req, res) => {
+    res.send(`Server running on port ${PORT}`);
+  })
 
 const PORT = process.env.PORT || 5000;
 
