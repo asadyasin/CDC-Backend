@@ -4,6 +4,7 @@ import mongoose from 'mongoose/index.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import compression from 'compression';
+import morgan from 'morgan';
 
 import degreeRoutes from './routes/degrees.js';
 import collegeRoutes from './routes/colleges.js';
