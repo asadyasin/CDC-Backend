@@ -45,181 +45,161 @@ export const getUser  = async (req, res)=>{
 export const signin = async (req, res) => {
 
     const { email, password } = req.body;
-
+  
     try {
-
-        const existingUser = await User.findOne({ email: email });
-        
-        
-        if (!existingUser)return res.status(404).json({ message: "User does not exist"});
-
-        if (existingUser.verified){
-            
-            const isPasswordCorrect = await bcrypt.compare(password, existingUser.password);
-
-            if(!isPasswordCorrect)return res.status(400).json({ message: "Invalid Credentials"});
-
-            const token = jwt.sign({email: existingUser.email, id: existingUser._id}, process.env.JWT_SECRET_KEY , { });
-
-            const result = {
-                username: existingUser.username,
-                email: existingUser.email,
-                accountRole: existingUser.accountRole,
-                id: existingUser._id
-            }
-
-            res.status(200).json({result , token});
-
-        }else{
-            res.status(400).json({message: "Email hasn't been verified yet check your inbox"});
-        }
-        
+      const existingUser = await User.findOne({ email });
+  
+      if (!existingUser) {
+        return res.status(404).json({ message: "User does not exist" });
+      }
+  
+      if (!existingUser.verified) {
+        return res.status(400).json({ message: "Email hasn't been verified yet. Check your inbox" });
+      }
+  
+      const isPasswordCorrect = await bcrypt.compare(password, existingUser.password);
+  
+      if (!isPasswordCorrect) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+  
+      const token = jwt.sign({ email: existingUser.email, id: existingUser._id }, process.env.JWT_SECRET_KEY, {});
+  
+      const { username, accountRole, _id: id } = existingUser;
+  
+      const result = { username, email, accountRole, id };
+      
+      res.status(200).json({ result, token });
     } catch (error) {
-        res.status(500).json({error});
+      res.status(500).json({ error });
     }
-};
+  };
 
 /* Signup with All info */
 
 export const signup = async (req, res) => {
+  const { username, email, password, confirmPassword } = req.body;
 
-    const {username, email, password, confirmPassword} = req.body;
-
-    try {
-        
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser)return res.status(400).json({ message: "User already exists"});
-
-        if(password === confirmPassword){
-
-            const hashedPassword = await bcrypt.hash(password, 12);
-            
-            const result = await User.create({email, password: hashedPassword, username, verified: false});
-
-            sendVerificationEmail(result, res);
-            
-        }else{
-        
-            return res.status(400).json({ message: "Passwords doesn't match"});
-        
-        }
-    
-    } catch (error) {
-        res.status(500).json({message: error.message});
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords don't match" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Prepare user object without creating it yet
+    const newUser = {
+      email,
+      password: hashedPassword,
+      username,
+      verified: false,
+    };
+
+    // Attempt to send verification email and obtain userId
+    const userId = await sendVerificationEmail(newUser);
+
+    if (userId) {
+      // If userId is obtained successfully, create the user
+      newUser._id = userId; // Assign the userId to newUser
+
+      const result = await User.create(newUser);
+      res.status(200).json({
+        status: "PENDING",
+        message: "Verification Email Sent Successfully",
+      });
+    } else {
+      // If there was an error sending the email or obtaining userId, return an error response
+      res.status(500).json({ message: "An error occurred while sending the verification email." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-/*Send Verification Email*/
+/* Send Verification Email */
 
-const sendVerificationEmail = async ({_id, email}, res) => {
-
+const sendVerificationEmail = async ({ email }) => {
+  try {
     const currentUrl = `${process.env.HOST}${process.env.PORT}`;
-
-    const __filename = fileURLToPath(import.meta.url);
-    // const __dirname = path.dirname(__filename);
-    // const file = path.join(__dirname, "public", "verificationEmail.html");
-    // const file = path.join(__dirname,"../public/verificationEmail.html")
     const file = path.join(process.cwd(), "public", "verificationEmail.html");
-    let html = fs.readFileSync(file, "utf8");
-    let link = `${currentUrl +"/user/verify/"+_id}`
+    const html = fs.readFileSync(file, "utf8");
 
-    html = html.replace('{link1}', link);
-    html = html.replace('{link2}', link);
+    // Generate a temporary userId
+    const userId = mongoose.Types.ObjectId();
+
+    const link = `${currentUrl}/user/verify/${userId}`;
+
+    const htmlWithLinks = html.replace(/{link1}/g, link).replace(/{link2}/g, link);
 
     const mailOptions = {
-        from: process.env.AUTH_EMAIL,
-        to: email,
-        subject: "Verify Your Email",
-        html: html,
-    }
+      from: process.env.AUTH_EMAIL,
+      to: email,
+      subject: "Verify Your Email",
+      html: htmlWithLinks,
+    };
+
     const newVerification = new userVerification({
-            userId: _id,
-            createdAt: Date.now(),
-            expiresAt: Date.now() + 3600000,
-        });
-    try {
-        await newVerification.save();
-        try {
-            await transporter.sendMail(mailOptions);
-                res.status(200).json({
-                    Status: "PENDING",
-                    message :"Verification Email Sent Successfully"
-                });
-        } catch (error) {
-            await User.deleteOne({ _id });
-            res.status(500).json({message: error.message});    
-        }
-    } catch (error) {
-        await User.deleteOne({ _id });
-        res.status(500).json({message: error.message});
-    }
-}
+      userId: userId, // Save the temporary userId
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
+    });
+
+    await Promise.all([newVerification.save(), transporter.sendMail(mailOptions)]);
+
+    return userId; // Return the temporary userId
+  } catch (error) {
+    console.error(error);
+    return null; // Return null if there was an error
+  }
+};
+
+  
 
 /* Verify Emails */
-export const verifyEmail = async (req, res)=>{
-    const { userId } = req.params;
-    try {
+export const verifyEmail = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const verificationData = await userVerification.findOne({ userId });
 
-        const verificationData = await userVerification.findOne({userId});
-        
-        if (!verificationData){
-            let message = "Account record doesn't exist or has been verified already. Please sign up or log in.";
-            res.redirect(`/user/verified/?error=true&message=${message}`); 
-        }else{
-            
-            const expriesAt = verificationData.expiresAt;
-            
-            if(expriesAt < Date.now()){
-                try {
-                    await userVerification.deleteOne({ userId });
-                        try {
-                            await User.deleteOne({ _id: userId });
-                            let message = "Link has been expired. Please sign up again.";
-                            res.redirect(`/user/verified/?error=true&message=${message}`);
-                        } catch (error) {
-                            let message = "Error during clearing User with expried time failed.";
-                            res.redirect(`/user/verified/?error=true&message=${message}`);
-                        }
-                } catch (error) {
-                    let message = "An error occurred clearing the expires user verification record.";
-                    res.redirect(`/user/verified/?error=true&message=${message}`);
-                }
-            }else{
-                    try {
-                            await User.updateOne({_id: userId},{verified : true});
-                            try {
-                                await userVerification.deleteOne({userId});
-                                res.redirect(`/user/verified`);
-                            } catch (error) {
-                                let message = "An error ocured while deleting the user verified.";
-                                res.redirect(`/user/verified/?error=true&message=${message}`);
-                            }
-                        } catch (error) {
-                            let message = "An error ocured while updating the user verified.";
-                            res.redirect(`/user/verified/?error=true&message=${message}`);
-                        }
-                } 
-            }
-            
-    } catch (error) {
-        console.log(error);
-        let message = "An error occurred while checking existing user verification record";
-        res.redirect(`/user/verified/?error=true&message=${message}`);
+    if (!verificationData) {
+      const message = "Account record doesn't exist or has already been verified. Please sign up or log in.";
+      return res.redirect(`/user/verified/?error=true&message=${message}`);
     }
+
+    const expiresAt = verificationData.expiresAt;
+
+    if (expiresAt < Date.now()) {
+      await Promise.all([
+        userVerification.deleteOne({ userId }),
+        User.deleteOne({ _id: userId })
+      ]);
+
+      const message = "The verification link has expired. Please sign up again.";
+      return res.redirect(`/user/verified/?error=true&message=${message}`);
+    }
+
+    await Promise.all([
+      User.updateOne({ _id: userId }, { verified: true }),
+      userVerification.deleteOne({ userId })
+    ]);
+
+    res.redirect(`/user/verified`);
+  } catch (error) {
+    console.error(error);
+    const message = "An error occurred while verifying the email.";
+    res.redirect(`/user/verified/?error=true&message=${message}`);
+  }
 };
+
 
 /*Verify Html file Route*/
 
 export const verified = async (req, res)=> {
-    
-    // const __filename = fileURLToPath(import.meta.url);
-    // const __dirname = path.dirname(__filename);
-    
-    // const file = path.join(process.cwd(), "public", "verificationEmail.html");
-    // const file = path.join(__dirname, "public", "verificationEmail.html");
-
     res.sendFile(path.join(process.cwd(), "public", "verified.html"));
 }
 
