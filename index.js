@@ -17,7 +17,7 @@ app.use(express.static('public'));
 
 app.use(express.json({limit: '50mb'}));
 app.use(compression());
-{ }
+
 app.use(bodyParser.json({extended: true, limit: '50mb'}));
 app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}));
 app.use(morgan('tiny'));
